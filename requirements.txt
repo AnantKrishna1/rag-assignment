@@ -1,0 +1,17 @@
+# core
+python-dateutil
+tqdm
+numpy
+pandas
+faiss-cpu
+sentence-transformers
+transformers
+torch
+PyMuPDF
+yake
+networkx
+matplotlib
+youtube-transcript-api
+streamlit
+scikit-learn
+ratelimit
