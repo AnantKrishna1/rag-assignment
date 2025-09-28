@@ -17,6 +17,19 @@ TRANSCRIPTS = DATA_DIR / "video_transcripts.jsonl"
 INDEX_PATH = DATA_DIR / "embed_store.pkl"  # <-- debug check
 
 # -----------------------------
+# Auto-build embed index if missing (for Streamlit Cloud)
+# -----------------------------
+from embed_store import build_embed_store  # make sure this exists in src/embed_store.py
+
+if not INDEX_PATH.exists():
+    st.info("⚠️ Index not found. Building embed index now...")
+    try:
+        build_embed_store()  # This should create data/embed_store.pkl
+        st.success("✅ Embed index built successfully!")
+    except Exception as e:
+        st.error(f"Failed to build embed index: {e}")
+
+# -----------------------------
 # Streamlit page setup
 # -----------------------------
 st.set_page_config(page_title="EdTech RAG MVP")
