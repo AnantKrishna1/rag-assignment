@@ -12,6 +12,7 @@ faiss-cpu
 
 # PDF & NLP
 PyMuPDF
+PyPDF2
 yake
 nltk
 
