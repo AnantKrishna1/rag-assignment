@@ -21,33 +21,41 @@ if mode == "Search / QA":
     query = st.text_input("Enter question for RAG:")
     if st.button("Search & Answer"):
         results = retrieve_top_k(query, k=5)
-        st.subheader("Top retrieved chunks:")
-        context = ""
-        for r in results:
-            st.write(f"Page: {r.get('page')} | Topic: {r.get('topic')}")
-            st.write(r.get("text")[:500] + "...")
-            context += "\n\n" + r.get("text")
-        # generate answer with generator
-        prompt = f"Use the context below to answer the question.\n\nContext:\n{context}\n\nQuestion: {query}\nAnswer in concise points."
-        answer = generate(prompt)
-        st.subheader("Generated Answer")
-        st.write(answer)
+        if not results:
+            st.warning("⚠️ No results found. Please check if index is built (`python build_index.py`).")
+        else:
+            st.subheader("Top retrieved chunks:")
+            context = ""
+            for r in results:
+                st.write(f"Page: {r.get('page')} | Topic: {r.get('topic')}")
+                st.write(r.get("text")[:500] + "...")
+                context += "\n\n" + r.get("text")
+            try:
+                prompt = f"Use the context below to answer the question.\n\nContext:\n{context}\n\nQuestion: {query}\nAnswer in concise points."
+                answer = generate(prompt)
+                st.subheader("Generated Answer")
+                st.write(answer)
+            except Exception as e:
+                st.error(f"Answer generation failed: {e}")
 
 elif mode == "Lessons":
     st.header("Auto-generated Lesson Pages (videos)")
     if TRANSCRIPTS.exists():
-        for line in open(TRANSCRIPTS, "r", encoding="utf-8"):
-            rec = json.loads(line)
-            with st.expander(f"Video {rec['video_id']} — Key terms: {', '.join(rec['keyterms'][:5])}"):
-                st.write("Overview:")
-                st.write(rec['text'][:800] + "...")
-                st.write("Highlights (timestamped):")
-                for h in rec['highlights']:
-                    st.write(f"- {int(h['start'])}s: {h['text']}")
-                st.write("MCQs:")
-                st.write(rec['mcqs'])
-                st.write("Essay question:")
-                st.write(rec['essay'])
+        try:
+            for line in open(TRANSCRIPTS, "r", encoding="utf-8"):
+                rec = json.loads(line)
+                with st.expander(f"Video {rec['video_id']} — Key terms: {', '.join(rec.get('keyterms', [])[:5])}"):
+                    st.write("Overview:")
+                    st.write(rec.get('text', '')[:800] + "...")
+                    st.write("Highlights (timestamped):")
+                    for h in rec.get('highlights', []):
+                        st.write(f"- {int(h.get('start', 0))}s: {h.get('text', '')}")
+                    st.write("MCQs:")
+                    st.write(rec.get('mcqs', []))
+                    st.write("Essay question:")
+                    st.write(rec.get('essay', ''))
+        except Exception as e:
+            st.error(f"Error loading transcripts: {e}")
     else:
         st.info("No video transcript processed yet. Run `process_videos.py` first.")
 
@@ -56,10 +64,16 @@ elif mode == "Assess answer":
     question = st.text_input("Question (for context):")
     student_answer = st.text_area("Paste student's answer here:")
     if st.button("Grade"):
-        refs = [r["text"] for r in retrieve_top_k(question, k=5)]
-        score, sims = grade_answer(student_answer, refs)
-        st.metric("Score (0-100)", score)
-        st.write("Similarity scores per reference chunk:", sims)
+        if not student_answer.strip():
+            st.warning("⚠️ Please enter a student answer.")
+        else:
+            refs = [r["text"] for r in retrieve_top_k(question, k=5)]
+            if not refs:
+                st.warning("⚠️ No reference material found. Rebuild the index first.")
+            else:
+                score, sims = grade_answer(student_answer, refs)
+                st.metric("Score (0-100)", score)
+                st.write("Similarity scores per reference chunk:", sims)
 
 elif mode == "Knowledge Graph":
     st.header("Knowledge Graph")

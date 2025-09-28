@@ -1,17 +1,31 @@
-# core
-python-dateutil
-tqdm
+# Core
 numpy
 pandas
-faiss-cpu
-sentence-transformers
-transformers
+python-dateutil
+tqdm
+
+# Embeddings + models
 torch
+transformers
+sentence-transformers
+faiss-cpu
+
+# PDF & NLP
 PyMuPDF
 yake
+nltk
+
+# Graphs & viz
 networkx
 matplotlib
+altair
+
+# Video + transcripts
 youtube-transcript-api
+requests
+
+# App + infra
 streamlit
+protobuf
 scikit-learn
 ratelimit
