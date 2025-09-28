@@ -1,4 +1,5 @@
 # src/app_streamlit.py
+
 import streamlit as st
 import json
 from pathlib import Path
@@ -8,15 +9,37 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
+# -----------------------------
+# Paths
+# -----------------------------
 DATA_DIR = Path("data")
 TRANSCRIPTS = DATA_DIR / "video_transcripts.jsonl"
+INDEX_PATH = DATA_DIR / "embed_store.pkl"  # <-- debug check
 
+# -----------------------------
+# Streamlit page setup
+# -----------------------------
 st.set_page_config(page_title="EdTech RAG MVP")
-
 st.title("RAG-based EdTech MVP — Economics Chapter")
 
-mode = st.sidebar.selectbox("Mode", ["Search / QA", "Lessons", "Assess answer", "Knowledge Graph"])
+# -----------------------------
+# Debug snippet: check index file
+# -----------------------------
+if INDEX_PATH.exists():
+    print("✅ Index file exists on cloud!")
+else:
+    print("⚠️ Index file NOT found on cloud!")
 
+# -----------------------------
+# Sidebar: Mode selection
+# -----------------------------
+mode = st.sidebar.selectbox(
+    "Mode", ["Search / QA", "Lessons", "Assess answer", "Knowledge Graph"]
+)
+
+# -----------------------------
+# Mode: Search / QA
+# -----------------------------
 if mode == "Search / QA":
     query = st.text_input("Enter question for RAG:")
     if st.button("Search & Answer"):
@@ -31,20 +54,29 @@ if mode == "Search / QA":
                 st.write(r.get("text")[:500] + "...")
                 context += "\n\n" + r.get("text")
             try:
-                prompt = f"Use the context below to answer the question.\n\nContext:\n{context}\n\nQuestion: {query}\nAnswer in concise points."
+                prompt = (
+                    f"Use the context below to answer the question.\n\n"
+                    f"Context:\n{context}\n\n"
+                    f"Question: {query}\nAnswer in concise points."
+                )
                 answer = generate(prompt)
                 st.subheader("Generated Answer")
                 st.write(answer)
             except Exception as e:
                 st.error(f"Answer generation failed: {e}")
 
+# -----------------------------
+# Mode: Lessons
+# -----------------------------
 elif mode == "Lessons":
     st.header("Auto-generated Lesson Pages (videos)")
     if TRANSCRIPTS.exists():
         try:
             for line in open(TRANSCRIPTS, "r", encoding="utf-8"):
                 rec = json.loads(line)
-                with st.expander(f"Video {rec['video_id']} — Key terms: {', '.join(rec.get('keyterms', [])[:5])}"):
+                with st.expander(
+                    f"Video {rec['video_id']} — Key terms: {', '.join(rec.get('keyterms', [])[:5])}"
+                ):
                     st.write("Overview:")
                     st.write(rec.get('text', '')[:800] + "...")
                     st.write("Highlights (timestamped):")
@@ -59,6 +91,9 @@ elif mode == "Lessons":
     else:
         st.info("No video transcript processed yet. Run `process_videos.py` first.")
 
+# -----------------------------
+# Mode: Assess answer
+# -----------------------------
 elif mode == "Assess answer":
     st.header("Student Answer Assessment")
     question = st.text_input("Question (for context):")
@@ -75,6 +110,9 @@ elif mode == "Assess answer":
                 st.metric("Score (0-100)", score)
                 st.write("Similarity scores per reference chunk:", sims)
 
+# -----------------------------
+# Mode: Knowledge Graph
+# -----------------------------
 elif mode == "Knowledge Graph":
     st.header("Knowledge Graph")
     gpath = DATA_DIR / "knowledge_graph.png"
